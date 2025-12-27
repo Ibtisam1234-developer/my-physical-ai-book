@@ -9,6 +9,8 @@ aiosqlite==0.20.0  # Use SQLite for simplicity
 
 asyncpg
 
+jwt
+
 # Validation
 pydantic==2.9.2
 pydantic-settings==2.6.1
