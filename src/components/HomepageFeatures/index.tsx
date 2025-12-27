@@ -11,32 +11,32 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'Easy to Use',
+    title: 'Complete AI Integration',
     Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
     description: (
       <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+        Learn to integrate Vision-Language-Action models with humanoid robot systems
+        for intelligent physical AI applications.
       </>
     ),
   },
   {
-    title: 'Focus on What Matters',
+    title: 'Industry-Standard Tools',
     Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
     description: (
       <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        Master ROS 2, NVIDIA Isaac, PyTorch, and other industry-standard tools
+        used by leading robotics companies.
       </>
     ),
   },
   {
-    title: 'Powered by React',
+    title: 'Hands-On Projects',
     Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
     description: (
       <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
+        Build 6 integrated projects from basic robot control to complete
+        AI-powered humanoid systems.
       </>
     ),
   },
@@ -49,7 +49,7 @@ function Feature({title, Svg, description}: FeatureItem) {
         <Svg className={styles.featureSvg} role="img" />
       </div>
       <div className="text--center padding-horiz--md">
-        <Heading as="h3">{title}</Heading>
+        <Heading as="h3" style={{color: '#0ea5e9'}}>{title}</Heading>
         <p>{description}</p>
       </div>
     </div>

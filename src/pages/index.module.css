@@ -8,6 +8,16 @@
   text-align: center;
   position: relative;
   overflow: hidden;
+  background: linear-gradient(135deg, #38b2ac 0%, #6ee7b7 100%); /* light peacock green gradient */
+  color: white;
+}
+
+.heroBanner h1 {
+  color: white;
+}
+
+.heroBanner p {
+  color: white;
 }
 
 @media screen and (max-width: 996px) {
@@ -20,4 +30,134 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.technologyStack {
+  padding: 4rem 0;
+  background-color: rgba(255, 255, 255, 0.9); /* semi-transparent white to contrast with background */
+  border-radius: 16px;
+  margin: 2rem;
+  box-shadow: 0 8px 32px rgba(56, 178, 172, 0.2); /* peacock green shadow */
+}
+
+.techCard {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  border: 1px solid #e2e8f0;
+}
+
+.techCard h3 {
+  color: #38b2ac; /* peacock green color */
+  margin-top: 0;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.techCard ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.techCard li {
+  padding: 0.25rem 0;
+  color: #1e293b;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.techCard li:before {
+  content: "•";
+  color: #38b2ac; /* peacock green color */
+  font-size: 1.5rem;
+  position: absolute;
+  left: 0;
+  top: 0;
+  line-height: 1;
+}
+
+.courseOverview {
+  padding: 3rem 0;
+  background-color: rgba(255, 255, 255, 0.9); /* semi-transparent white to contrast with background */
+  border-radius: 16px;
+  margin: 2rem;
+  box-shadow: 0 8px 32px rgba(56, 178, 172, 0.2); /* peacock green shadow */
+}
+
+.courseOverview h2 {
+  color: #38b2ac; /* peacock green color */
+}
+
+.courseOverview p {
+  color: #1e293b;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.courseOverview .col h3 {
+  color: #38b2ac; /* peacock green color */
+  font-weight: bold;
+}
+
+.courseOverview .col p {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #0f766e; /* darker peacock green */
+}
+
+/* Course cards */
+.courseCard {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: default;
+}
+
+.courseCard:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.courseIcon {
+  margin: 0 auto 1rem auto;
+  color: #38b2ac; /* peacock green */
+}
+
+.courseCard h3 {
+  color: #38b2ac; /* peacock green */
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.courseCard p {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #0f766e; /* darker peacock green */
+  margin: 0;
+}
+
+/* Card hover effects for technology stack */
+.techCard {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  border: 1px solid #e2e8f0;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: default;
+}
+
+.techCard:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }

@@ -1,0 +1,121 @@
+openapi: 3.1.0
+info:
+  title: Physical AI Platform - Sessions API
+  description: Chat session history management
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+  - url: https://api.physicalai.edu
+
+paths:
+  /api/sessions:
+    get:
+      summary: List user's chat sessions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SessionSummary'
+                  total:
+                    type: integer
+
+  /api/sessions/{session_id}:
+    get:
+      summary: Get session details
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Session with full history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+
+    delete:
+      summary: Delete session
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Session deleted
+
+components:
+  schemas:
+    SessionSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        first_message:
+          type: string
+        message_count:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+
+    SessionResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+              content:
+                type: string
+              timestamp:
+                type: string
+                format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

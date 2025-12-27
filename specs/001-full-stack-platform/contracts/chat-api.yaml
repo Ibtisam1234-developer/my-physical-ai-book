@@ -1,0 +1,53 @@
+openapi: 3.1.0
+info:
+  title: Physical AI Platform - Chat API
+  description: RAG-powered chatbot endpoint for Physical AI & Humanoid Robotics education
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+  - url: https://api.physicalai.edu
+    description: Production
+
+paths:
+  /api/chat:
+    post:
+      summary: Send chat query and receive streaming response
+      description: Performs RAG retrieval, augments prompt, streams Gemini response
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  minLength: 1
+                  maxLength: 10000
+                session_id:
+                  type: integer
+                  nullable: true
+      responses:
+        '200':
+          description: Streaming response (Server-Sent Events)
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '401':
+          description: Unauthorized
+        '429':
+          description: Rate limit exceeded (10/minute)
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
