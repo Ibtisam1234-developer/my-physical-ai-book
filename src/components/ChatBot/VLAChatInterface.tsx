@@ -15,7 +15,7 @@ interface VLAChatInterfaceProps {
 
 const VLAChatInterface: React.FC<VLAChatInterfaceProps> = ({ onClose, initialMessages = [] }) => {
   const { siteConfig } = useDocusaurusContext();
-  const backendUrl = (siteConfig.customFields?.BACKEND_URL as string) || 'http://localhost:8000';
+  const backendUrl = (siteConfig.customFields?.BACKEND_URL as string) || 'https://my-physical-ai-book-production.up.railway.app';
 
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputValue, setInputValue] = useState('');

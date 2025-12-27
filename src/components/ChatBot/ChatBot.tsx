@@ -12,7 +12,7 @@ interface Message {
 
 const ChatBot: React.FC = () => {
   const { siteConfig } = useDocusaurusContext();
-  const backendUrl = (siteConfig.customFields?.BACKEND_URL as string) || 'http://localhost:8000';
+  const backendUrl = (siteConfig.customFields?.BACKEND_URL as string) || 'https://my-physical-ai-book-production.up.railway.app';
 
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
