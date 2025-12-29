@@ -88,6 +88,7 @@ module.exports = function (context, options) {
               });
             });
 
+
             return middlewares;
           },
         },

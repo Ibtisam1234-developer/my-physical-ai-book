@@ -13,7 +13,6 @@ interface Message {
 
 const ChatBot: React.FC = () => {
   const { siteConfig } = useDocusaurusContext();
-  const backendUrl = (siteConfig.customFields?.BACKEND_URL as string) || 'https://my-physical-ai-book-production.up.railway.app';
 
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -50,6 +49,7 @@ const ChatBot: React.FC = () => {
 
     try {
       // Use backend URL from config
+      const backendUrl = (siteConfig.customFields?.BACKEND_URL as string) || 'http://localhost:8000';
       const fullUrl = `${backendUrl}/api/chat/`;
 
       // Get auth token if user is signed in
@@ -68,7 +68,7 @@ const ChatBot: React.FC = () => {
         headers,
         body: JSON.stringify({
           query: inputValue,
-          score_threshold: 0.1, // Use low threshold to get responses
+          score_threshold: 0.7, // Use the default threshold
         }),
       });
 

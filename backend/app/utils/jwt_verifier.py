@@ -5,46 +5,54 @@ This module provides JWT token verification for the backend, fetching public key
 from the auth server's JWKS endpoint and caching them for performance.
 """
 
-import jwt
-from jwks_rsa import PyJWKClient, PyJWKClientError
+import jwt  # This imports PyJWT (not the jwt package)
 from typing import Optional, Dict, Any
 from datetime import datetime, timezone
 import logging
 import requests
 import json
-from cryptography.hazmat.primitives.asymmetric import rsa
+from jose import jwk
+from jose.utils import base64url_decode
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Global JWKS client instance (lazy initialization)
-_jwks_client: Optional[PyJWKClient] = None
+# Global JWKS cache (simple implementation)
+_jwks_cache: Optional[Dict] = None
+_last_jwks_refresh: Optional[datetime] = None
 
 
-def get_jwks_client() -> PyJWKClient:
+def get_jwks_client():
     """
-    Get or create the JWKS client instance.
-
-    The client automatically caches fetched keys and refreshes them based on
-    the configured lifespan (default 24 hours per constitution).
+    Get JWKS from the auth server with simple caching.
     """
-    global _jwks_client
+    global _jwks_cache, _last_jwks_refresh
 
-    if _jwks_client is None:
+    now = datetime.now(timezone.utc)
+    cache_duration = getattr(settings, 'JWKS_CACHE_LIFETIME', 86400)  # Default 24 hours in seconds
+
+    # Refresh cache if empty or expired
+    if (_jwks_cache is None or
+        _last_jwks_refresh is None or
+        (now - _last_jwks_refresh).total_seconds() > cache_duration):
+
         try:
-            _jwks_client = PyJWKClient(
-                settings.JWKS_URL,
-                cache_keys=True,
-                lifespan=settings.JWKS_CACHE_LIFETIME,
-            )
-            logger.info(f"JWKS client initialized with URL: {settings.JWKS_URL}")
-        except PyJWKClientError as e:
-            logger.error(f"Failed to initialize JWKS client: {e}")
+            response = requests.get(settings.JWKS_URL)
+            response.raise_for_status()
+            _jwks_cache = response.json()
+            _last_jwks_refresh = now
+            logger.info(f"JWKS refreshed from URL: {settings.JWKS_URL}")
+        except requests.RequestException as e:
+            logger.error(f"Failed to fetch JWKS: {e}")
+            raise
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JWKS response: {e}")
             raise
 
-    return _jwks_client
+    return _jwks_cache
 
 
 class JWTVerificationError(Exception):
@@ -69,6 +77,74 @@ class JWKSFetchError(JWTVerificationError):
     """Raised when the JWKS endpoint cannot be reached."""
 
     pass
+
+
+def get_signing_key_from_jwt(token: str):
+    """
+    Extract the signing key from JWKS based on the token's kid header.
+    """
+    try:
+        # Decode header without verification to get kid
+        header_data = token.split('.')[0]
+        header_json = base64url_decode(header_data + '=' * (4 - len(header_data) % 4))
+        header = json.loads(header_json.decode('utf-8'))
+
+        kid = header.get('kid')
+        if not kid:
+            raise InvalidTokenError("Token header missing kid")
+
+        # Get JWKS
+        jwks = get_jwks_client()
+
+        # Find the key with matching kid
+        key = None
+        for jwk_data in jwks['keys']:
+            if jwk_data['kid'] == kid:
+                key = jwk_data
+                break
+
+        if not key:
+            raise InvalidTokenError(f"Signing key with kid {kid} not found")
+
+        # Create the RSA public key using jose library and convert for jwt package
+        # The jose library creates the key object which we can use with jwt
+        jose_key = jwk.construct(key)
+        # For jwt package (1.4.0), we need to get the PEM format and then
+        # use it properly with the jwt.JWT class
+        public_key_pem = jose_key.to_pem()
+
+        # Parse the key components from the JWKS key data
+        # Properly handle base64url decoding
+        import base64
+        # Add proper padding for base64 decoding
+        n_b64 = key['n'] + '=' * (4 - len(key['n']) % 4)
+        e_b64 = key['e'] + '=' * (4 - len(key['e']) % 4)
+
+        n_bytes = base64.urlsafe_b64decode(n_b64)
+        e_bytes = base64.urlsafe_b64decode(e_b64)
+
+        n = int.from_bytes(n_bytes, 'big')
+        e = int.from_bytes(e_bytes, 'big')
+
+        # Create RSA public key using cryptography
+        public_numbers = rsa.RSAPublicNumbers(e, n)
+        public_key_crypto = public_numbers.public_key()
+
+        # For the jwt package (1.4.0), we need to create a proper JWK
+        # Use the jwt.jwk.RSAJWK class if available, otherwise use the generic approach
+        try:
+            from jwt.jwk import RSAJWK
+            public_key = RSAJWK(public_key_crypto)
+        except AttributeError:
+            # If RSAJWK doesn't exist, use the generic JWK approach
+            # Create the JWK manually with the required parameters
+            from jwt.jwk import JWK
+            public_key = JWK.from_pyca(public_key_crypto)
+
+        return public_key
+    except Exception as e:
+        logger.error(f"Error getting signing key: {e}")
+        raise InvalidTokenError(f"Error getting signing key: {str(e)}")
 
 
 def verify_token(token: str) -> Dict[str, Any]:
@@ -99,42 +175,33 @@ def verify_token(token: str) -> Dict[str, Any]:
         logger.info(f"Attempting to verify token, JWKS URL: {settings.JWKS_URL}")
 
         # Get the signing key from JWKS
-        jwks_client = get_jwks_client()
-        logger.info("JWKS client obtained successfully")
-
-        signing_key = jwks_client.get_signing_key_from_jwt(token)
+        signing_key = get_signing_key_from_jwt(token)
         logger.info("Signing key retrieved from JWKS")
 
-        # Decode and verify the token
-        payload = jwt.decode(
-            token,
-            signing_key.key,
-            algorithms=["RS256"],
-            issuer="physical-ai-auth-server",
-            options={
-                "verify_aud": False,  # No audience claim in our tokens
-                "verify_iat": True,   # Verify issued at time
-                "verify_exp": True,   # Verify expiration
-            }
-        )
+        # Decode and verify the token using jwt.JWT class
+        jwt_instance = jwt.JWT()
+        # Verify the token and get the payload
+        payload = jwt_instance.decode(token, signing_key)
+
+        # Verify issuer claim manually since jwt.JWT doesn't handle it automatically
+        if payload.get('iss') != "physical-ai-auth-server":
+            logger.warning(f"Invalid issuer: {payload.get('iss')}")
+            raise InvalidTokenError(f"Invalid token issuer: {payload.get('iss')}")
 
         logger.info(f"Token verified successfully for user: {payload.get('sub')}")
         return payload
 
-    except jwt.ExpiredSignatureError:
-        logger.warning("JWT token has expired")
-        raise TokenExpiredError("Token has expired")
+    except jwt.exceptions.JWTDecodeError as e:
+        # Check if it's an expiration error by examining the message
+        if "expired" in str(e).lower():
+            logger.warning("JWT token has expired")
+            raise TokenExpiredError("Token has expired")
+        else:
+            logger.warning(f"JWT token validation failed: {e}")
+            raise InvalidTokenError(f"Invalid token: {str(e)}")
 
-    except jwt.InvalidIssuerError as e:
-        logger.warning(f"JWT token has invalid issuer: {e}")
-        raise InvalidTokenError(f"Invalid token issuer: {str(e)}")
-
-    except jwt.InvalidTokenError as e:
-        logger.warning(f"JWT token validation failed: {e}")
-        raise InvalidTokenError(f"Invalid token: {str(e)}")
-
-    except PyJWKClientError as e:
-        logger.error(f"JWKS client error: {e}")
+    except requests.RequestException as e:
+        logger.error(f"JWKS fetch error: {e}")
         raise JWKSFetchError(f"Failed to fetch signing key: {str(e)}")
 
     except Exception as e:

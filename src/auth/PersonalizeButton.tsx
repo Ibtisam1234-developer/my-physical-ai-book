@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "./context";
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 
 interface PersonalizeButtonProps {
   chapterId: string;
@@ -15,6 +16,8 @@ export function PersonalizeButton({
   className = "",
 }: PersonalizeButtonProps) {
   const { isAuthenticated, user, isLoading } = useAuth();
+  const { siteConfig } = useDocusaurusContext();
+  const backendUrl = (siteConfig.customFields?.BACKEND_URL as string) || 'http://localhost:8000';
   const [isPersonalizing, setIsPersonalizing] = useState(false);
   const [error, setError] = useState("");
   const [showPersonalizedContent, setShowPersonalizedContent] = useState(false);
@@ -55,8 +58,7 @@ export function PersonalizeButton({
     setError("");
 
     try {
-      // Call the backend personalization API directly at port 8000
-      const response = await fetch("http://localhost:8000/api/personalize", {
+      const response = await fetch(`${backendUrl}/api/personalize`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
