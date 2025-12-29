@@ -6,7 +6,7 @@ from the auth server's JWKS endpoint and caching them for performance.
 """
 
 import jwt
-from jwt import PyJWKClient, PyJWKClientError
+from jwks_rsa import PyJWKClient, PyJWKClientError
 from typing import Optional, Dict, Any
 from datetime import datetime, timezone
 import logging
