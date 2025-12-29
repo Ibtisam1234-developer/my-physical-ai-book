@@ -61,12 +61,16 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for now (update in production)
+    allow_origins=settings.allowed_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+# Add authentication middleware
+from app.middleware.auth_middleware import AuthMiddleware
+app.add_middleware(AuthMiddleware)
 
 
 @app.get("/health")
@@ -91,8 +95,10 @@ async def root():
 
 # Register API routers
 from app.api import chat
+from app.api import personalize
 
 app.include_router(chat.router, tags=["Chat"])
+app.include_router(personalize.router, tags=["Personalization"])
 
 # TODO: Add remaining routers as they are implemented
 # app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])

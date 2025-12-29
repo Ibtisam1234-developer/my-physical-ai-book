@@ -36,12 +36,19 @@ class Settings(BaseSettings):
     QDRANT_COLLECTION_NAME: str = "physical_ai_docs"
 
     # JWT Authentication
-    JWT_SECRET: str
-    JWT_ALGORITHM: str = "HS256"
+    JWT_SECRET: str = ""  # Not used with RS256 - kept for compatibility
+    JWT_ALGORITHM: str = "RS256"
     JWT_EXPIRATION_HOURS: int = 24
 
+    # JWKS Configuration (for RS256 JWT verification)
+    JWKS_URL: str = "http://127.0.0.1:3001/.well-known/jwks.json"
+    JWKS_CACHE_LIFETIME: int = 86400  # 24 hours in seconds
+
+    # Auth Server Configuration
+    AUTH_SERVER_URL: str = "http://localhost:3001"
+
     # CORS Configuration
-    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:3001"
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:3001,http://localhost:3002,https://*.vercel.app,https://*.railway.app"
 
     # Rate Limiting
     RATE_LIMIT_ENABLED: bool = True
