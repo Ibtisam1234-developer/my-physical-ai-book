@@ -1,0 +1,350 @@
+openapi: 3.0.3
+info:
+  title: Personalization Service API
+  description: |
+    Python FastAPI backend providing personalized content generation for Physical AI learning platform.
+    Verifies JWT tokens from auth server, extracts user background, generates LLM-tailored content,
+    and caches results for 7 days.
+
+    **Base URL**: `https://api.yourdomain.com`
+
+    **Authentication**: JWT access token in Authorization header:
+    `Authorization: Bearer <access_token>`
+
+    Token must contain claims: user_id, email, software_background, hardware_background
+  version: 1.0.0
+  contact:
+    name: Physical AI Platform Team
+servers:
+  - url: https://api.yourdomain.com
+    description: Production server (Railway)
+  - url: http://localhost:8000
+    description: Local development server
+
+tags:
+  - name: Personalization
+    description: Content personalization operations
+
+paths:
+  /api/personalize:
+    post:
+      tags:
+        - Personalization
+      summary: Generate personalized content for chapter
+      description: |
+        Accepts chapter markdown and JWT token, extracts user's software/hardware background from token,
+        generates personalized explanation using Gemini LLM, and caches result for 7 days.
+
+        **Workflow**:
+        1. Verify JWT signature using cached JWKS public key from auth server
+        2. Extract user_id, software_background, hardware_background from JWT claims
+        3. Compute SHA-256 hash of chapter_markdown for cache lookup
+        4. Check cache for existing personalized content (user_id + content_hash + content_type)
+        5. If cache hit: return cached content
+        6. If cache miss: generate personalized content via Gemini LLM, store in cache, return
+
+        **Rate Limiting**: 10 requests per user per minute (FR-028). Returns HTTP 429 if exceeded.
+
+        **Corresponds to**: User Story 3 (FR-016 through FR-024)
+      operationId: personalizeContent
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonalizeRequest'
+            examples:
+              rosNavigation:
+                summary: ROS 2 Navigation chapter
+                value:
+                  chapterMarkdown: |
+                    # ROS 2 Navigation Stack
+
+                    The ROS 2 Navigation Stack (Nav2) is a collection of packages that enable autonomous navigation for mobile robots...
+                  contentType: curriculum_path
+      responses:
+        '200':
+          description: Personalized content generated successfully
+          headers:
+            X-Cache-Hit:
+              description: Whether content was served from cache
+              schema:
+                type: boolean
+              example: false
+            X-Generation-Time-Ms:
+              description: Time taken to generate content (ms). Only present if cache miss.
+              schema:
+                type: integer
+              example: 2345
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalizeResponse'
+              example:
+                personalizedText: |
+                  For someone with intermediate software skills and hobbyist hardware experience, the ROS 2 Navigation Stack builds on concepts you may already know from basic robotics projects. Think of it as the "autopilot" system for your robot...
+                model: gemini-2.0-flash-exp
+                tokens: 856
+                cacheHit: false
+                generatedAt: 2025-12-27T12:34:56Z
+                expiresAt: 2026-01-03T12:34:56Z
+        '400':
+          description: Invalid request (missing/empty chapter_markdown)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingMarkdown:
+                  summary: Missing chapter_markdown
+                  value:
+                    error: Validation error
+                    message: chapter_markdown is required
+                    field: chapterMarkdown
+                emptyMarkdown:
+                  summary: Empty chapter markdown
+                  value:
+                    error: Validation error
+                    message: chapter_markdown cannot be empty
+                    field: chapterMarkdown
+        '401':
+          description: Authentication failed (missing, expired, or invalid JWT token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingToken:
+                  summary: Missing Authorization header
+                  value:
+                    error: Unauthorized
+                    message: Authorization header required
+                expiredToken:
+                  summary: Expired JWT token
+                  value:
+                    error: Unauthorized
+                    message: Token expired
+                invalidSignature:
+                  summary: Invalid token signature
+                  value:
+                    error: Unauthorized
+                    message: Invalid token signature
+        '429':
+          description: Rate limit exceeded (10 requests per user per minute)
+          headers:
+            X-RateLimit-Limit:
+              description: Rate limit (requests per minute)
+              schema:
+                type: integer
+              example: 10
+            X-RateLimit-Remaining:
+              description: Requests remaining in current window
+              schema:
+                type: integer
+              example: 0
+            X-RateLimit-Reset:
+              description: Unix timestamp when rate limit resets
+              schema:
+                type: integer
+              example: 1672148100
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Too Many Requests
+                message: Rate limit exceeded. Please try again later.
+        '500':
+          description: Internal server error (database failure, LLM API error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                databaseError:
+                  summary: Database connection failure
+                  value:
+                    error: Internal server error
+                    message: Unable to connect to database
+                llmApiError:
+                  summary: Gemini API error
+                  value:
+                    error: Internal server error
+                    message: Unable to generate personalized content. Please try again.
+        '503':
+          description: Service unavailable (JWKS endpoint unreachable and cache stale)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Service Unavailable
+                message: Authentication service temporarily unavailable
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Returns service status and dependency health (database, JWKS endpoint)
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: healthy
+                timestamp: 2025-12-27T12:34:56Z
+                dependencies:
+                  database: healthy
+                  jwksCache: healthy
+                  geminiApi: healthy
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: unhealthy
+                timestamp: 2025-12-27T12:34:56Z
+                dependencies:
+                  database: unhealthy
+                  jwksCache: stale
+                  geminiApi: healthy
+
+components:
+  schemas:
+    PersonalizeRequest:
+      type: object
+      required:
+        - chapterMarkdown
+      properties:
+        chapterMarkdown:
+          type: string
+          description: |
+            Full markdown content of the chapter to personalize. Used to compute SHA-256 hash for cache lookup.
+            Minimum length: 100 characters (prevents accidental empty requests).
+          minLength: 100
+          example: |
+            # ROS 2 Navigation Stack
+
+            The ROS 2 Navigation Stack (Nav2) is a collection of packages...
+        contentType:
+          type: string
+          enum: [curriculum_path, difficulty_level, recommended_resources]
+          default: curriculum_path
+          description: Type of personalized content to generate
+          example: curriculum_path
+
+    PersonalizeResponse:
+      type: object
+      required:
+        - personalizedText
+        - model
+        - cacheHit
+        - generatedAt
+        - expiresAt
+      properties:
+        personalizedText:
+          type: string
+          description: LLM-generated personalized explanation tailored to user's background
+          example: |
+            For someone with intermediate software skills and hobbyist hardware experience, the ROS 2 Navigation Stack...
+        model:
+          type: string
+          description: LLM model used for generation
+          example: gemini-2.0-flash-exp
+        tokens:
+          type: integer
+          description: Token count from LLM API response (for cost tracking). Null if cache hit.
+          nullable: true
+          example: 856
+        cacheHit:
+          type: boolean
+          description: Whether content was served from cache (true) or generated fresh (false)
+          example: false
+        generatedAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when content was generated
+          example: 2025-12-27T12:34:56Z
+        expiresAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when cached content expires (7 days from generation)
+          example: 2026-01-03T12:34:56Z
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error category
+          example: Unauthorized
+        message:
+          type: string
+          description: Human-readable error message
+          example: Token expired
+        field:
+          type: string
+          description: Field name causing validation error (if applicable)
+          nullable: true
+          example: chapterMarkdown
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy, degraded]
+          description: Overall service health status
+          example: healthy
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of health check
+          example: 2025-12-27T12:34:56Z
+        dependencies:
+          type: object
+          description: Health status of dependencies
+          properties:
+            database:
+              type: string
+              enum: [healthy, unhealthy]
+              example: healthy
+            jwksCache:
+              type: string
+              enum: [healthy, stale, unavailable]
+              description: JWKS public key cache status
+              example: healthy
+            geminiApi:
+              type: string
+              enum: [healthy, unhealthy]
+              example: healthy
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT access token obtained from auth server. Must contain claims:
+        - user_id (UUID)
+        - email (string)
+        - software_background (beginner|intermediate|advanced|expert)
+        - hardware_background (none|hobbyist|student|professional)
+
+security:
+  - bearerAuth: []  # All endpoints require authentication by default

@@ -1,0 +1,117 @@
+.personalizeSection {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.personalizeSection h3 {
+  margin-top: 0;
+  color: #2563eb;
+  font-size: 1.1rem;
+}
+
+.personalize-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.personalize-btn {
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.personalize-btn:hover {
+  background-color: #1d4ed8;
+}
+
+.personalize-btn:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.personalized-content {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 4px;
+  border-left: 3px solid #2563eb;
+}
+
+.personalized-content-summary {
+  margin-top: 1rem;
+}
+
+.personalized-content-toggle {
+  padding: 0.5rem 1rem;
+  background-color: #64748b;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.personalized-content-toggle:hover {
+  background-color: #475569;
+}
+
+.personalized-content-full {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 4px;
+  border-left: 3px solid #2563eb;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.personalized-text {
+  line-height: 1.6;
+}
+
+.personalized-text h1,
+.personalized-text h2,
+.personalized-text h3,
+.personalized-text h4,
+.personalized-text h5,
+.personalized-text h6 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.personalized-text p {
+  margin-bottom: 1rem;
+}
+
+.personalized-content-clear {
+  padding: 0.25rem 0.5rem;
+  background-color: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.personalized-content-clear:hover {
+  background-color: #b91c1c;
+}
+
+.user-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  margin-left: 0.5rem;
+}

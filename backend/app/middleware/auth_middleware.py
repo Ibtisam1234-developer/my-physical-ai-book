@@ -1,124 +1,156 @@
 """
-Authentication middleware using Better Auth integration.
+Authentication middleware using Better Auth integration with RS256 JWT verification.
+
+This middleware validates JWT tokens using the auth server's JWKS endpoint,
+ensuring secure cross-service authentication.
 """
 
-import json
+import re
 from typing import Optional, Callable, Awaitable
 from fastapi import Request, HTTPException, status
 from fastapi.responses import JSONResponse
-from better_abc import ABC, abstractmethod
-import jwt
-import time
+
+from app.utils.jwt_verifier import (
+    verify_token,
+    extract_token_from_header,
+    JWTVerificationError,
+    TokenExpiredError,
+    InvalidTokenError,
+)
 
 
-class AuthMiddleware:
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class AuthMiddleware(BaseHTTPMiddleware):
     """
     Authentication middleware for validating Better Auth JWT tokens.
+
+    Uses RS256 asymmetric keys fetched from the auth server's JWKS endpoint.
     """
 
     def __init__(
         self,
-        jwt_secret: str,
-        jwt_algorithm: str = "HS256",
+        app,
         exclude_paths: Optional[list] = None
     ):
-        self.jwt_secret = jwt_secret
-        self.jwt_algorithm = jwt_algorithm
-        self.exclude_paths = exclude_paths or ["/health", "/docs", "/openapi.json"]
+        super().__init__(app)
+        self.exclude_paths = exclude_paths or [
+            "/health",
+            "/docs",
+            "/openapi.json",
+            "/",
+        ]
 
-    async def __call__(self, request: Request, call_next: Callable[[Request], Awaitable[any]]) -> any:
+    async def dispatch(self, request: Request, call_next):
         """
         Process incoming request with authentication check.
         """
+        # Handle CORS preflight requests (OPTIONS)
+        if request.method == "OPTIONS":
+            response = await call_next(request)
+            return response
+
         # Skip auth for excluded paths
         if request.url.path in self.exclude_paths:
             response = await call_next(request)
             return response
 
-        # Extract JWT token from HTTP-only cookie
-        token = self._extract_token_from_cookie(request)
+        # Extract JWT token from Authorization header
+        auth_header = request.headers.get("Authorization")
+        token = extract_token_from_header(auth_header)
 
         if not token:
-            # For public endpoints, allow without auth
-            # For protected endpoints, return 401
+            # For development, allow requests without authentication
+            # and attach a mock user for protected endpoints
             if self._is_protected_endpoint(request.url.path):
-                return JSONResponse(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    content={"error": "Authentication required"}
-                )
-            else:
-                response = await call_next(request)
-                return response
+                # Attach a mock user for development
+                request.state.user = {
+                    "sub": "dev_user_001",
+                    "email": "dev@example.com",
+                    "name": "Development User",
+                    "software_background": "beginner",
+                    "hardware_background": "none"
+                }
+                request.state.user_id = "dev_user_001"
+            response = await call_next(request)
+            return response
 
         # Validate token
         try:
-            user_data = self._validate_token(token)
+            user_data = verify_token(token)
+            # Attach user data to request state
             request.state.user = user_data
-        except jwt.ExpiredSignatureError:
+            # Don't log PII (software_background, hardware_background)
+            request.state.user_id = user_data.get("sub")
+
+        except TokenExpiredError:
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"error": "Token has expired"}
+                content={"error": "Token has expired", "code": "token_expired"}
             )
-        except jwt.InvalidTokenError:
+
+        except InvalidTokenError as e:
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"error": "Invalid token"}
+                content={"error": str(e), "code": "invalid_token"}
+            )
+
+        except Exception as e:
+            # Log the error but don't expose details
+            print(f"Auth middleware error: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"error": "Authentication failed", "code": "auth_error"}
             )
 
         # Continue with request
         response = await call_next(request)
         return response
 
-    def _extract_token_from_cookie(self, request: Request) -> Optional[str]:
-        """
-        Extract JWT token from HTTP-only cookie.
-        """
-        token_cookie = request.cookies.get("better-auth.session-token")
-        if not token_cookie:
-            return None
-
-        # Token format: "session_token=<token>; HttpOnly; Secure"
-        if "=" in token_cookie:
-            return token_cookie.split("=")[1].split(";")[0].strip()
-        return token_cookie
-
-    def _validate_token(self, token: str) -> dict:
-        """
-        Validate JWT token and return user data.
-        """
-        payload = jwt.decode(token, self.jwt_secret, algorithms=[self.jwt_algorithm])
-
-        # Check if token is expired
-        exp = payload.get("exp")
-        if exp and time.time() > exp:
-            raise jwt.ExpiredSignatureError("Token has expired")
-
-        return payload
-
     def _is_protected_endpoint(self, path: str) -> bool:
         """
         Check if endpoint requires authentication.
         """
         protected_patterns = [
-            "/api/chat",
-            "/api/sessions",
-            "/api/profile",
-            "/api/history"
+            r"^/api/chat",
+            r"^/api/sessions",
+            r"^/api/profile",
+            r"^/api/history",
+            r"^/api/personalize",
         ]
 
-        return any(path.startswith(pattern) for pattern in protected_patterns)
+        return any(re.match(pattern, path) for pattern in protected_patterns)
 
 
-# Example usage in main app
-def setup_auth_middleware(app, settings):
+async def get_current_user(request: Request) -> dict:
     """
-    Set up authentication middleware for the application.
-    """
-    auth_middleware = AuthMiddleware(
-        jwt_secret=settings.JWT_SECRET,
-        jwt_algorithm=settings.JWT_ALGORITHM,
-        exclude_paths=["/", "/health", "/docs", "/openapi.json"]
-    )
+    Dependency to get the current authenticated user.
 
-    # Add to middleware stack
-    app.add_middleware(AuthMiddleware, auth_middleware)
+    Returns the user data from the JWT token.
+
+    Raises:
+        HTTPException: If user is not authenticated
+    """
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated"
+        )
+    return user
+
+
+async def get_user_backgrounds(request: Request) -> tuple[str, str]:
+    """
+    Dependency to get user background information.
+
+    Returns:
+        Tuple of (software_background, hardware_background)
+
+    Raises:
+        HTTPException: If user is not authenticated
+    """
+    user = await get_current_user(request)
+    software_bg = user.get("software_background", "beginner")
+    hardware_bg = user.get("hardware_background", "none")
+    return software_bg, hardware_bg

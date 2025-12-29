@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import clsx from 'clsx';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import { authClient } from '@site/src/lib/auth-client';
 import styles from './ChatBot.module.css';
 
 interface Message {
@@ -51,12 +52,20 @@ const ChatBot: React.FC = () => {
       // Use backend URL from config
       const fullUrl = `${backendUrl}/api/chat/`;
 
+      // Get auth token if user is signed in
+      const session = authClient.getSession();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (session?.token) {
+        headers['Authorization'] = `Bearer ${session.token}`;
+      }
+
       // Call the backend API
       const response = await fetch(fullUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           query: inputValue,
           score_threshold: 0.1, // Use low threshold to get responses

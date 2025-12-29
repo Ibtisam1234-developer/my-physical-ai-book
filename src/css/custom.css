@@ -27,4 +27,105 @@
   --ifm-color-primary-lighter: #a7f3d0;
   --ifm-color-primary-lightest: #d1fae5;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  /* Dark mode book content: black background, white text */
+  --ifm-background-color: #000000; /* Black background */
+  --ifm-background-surface-color: #000000; /* Black surface */
+  --ifm-color-content: #ffffff; /* White text */
+  --ifm-color-content-secondary: #e6e6e6; /* Light gray secondary text */
+  --ifm-heading-color: #ffffff; /* White headings */
+  --ifm-font-color-base: #ffffff; /* White base font */
+  --ifm-font-color-base-inverse: #000000; /* Black inverse font */
+  --ifm-font-color-secondary: #e6e6e6; /* Light gray secondary font */
+  --ifm-table-cell-background: #1a1a1a; /* Dark gray table cells */
+  --ifm-table-border-color: #404040; /* Medium gray table borders */
+  --ifm-code-background: rgb(32, 32, 32); /* Dark gray code blocks */
+  --ifm-code-color: #ffffff; /* White code text */
+}
+
+/* Specific dark mode overrides for book content */
+[data-theme='dark'] .docs-wrapper,
+[data-theme='dark'] .doc-item-container,
+[data-theme='dark'] .theme-doc-markdown,
+[data-theme='dark'] article,
+[data-theme='dark'] .markdown {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+[data-theme='dark'] .main-wrapper {
+  background-color: #000000 !important;
+}
+
+[data-theme='dark'] .container {
+  background-color: #000000 !important;
+}
+
+/* Dark mode sidebar */
+[data-theme='dark'] .sidebar,
+[data-theme='dark'] .menu,
+[data-theme='dark'] .theme-doc-sidebar-menu,
+[data-theme='dark'] .menu__list,
+[data-theme='dark'] .menu__list-item,
+[data-theme='dark'] .menu__link {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+[data-theme='dark'] .menu__link--active,
+[data-theme='dark'] .menu__link:hover {
+  background-color: #333333 !important;
+  color: #6ee7b7 !important;
+}
+
+/* RTL Support for Urdu locale */
+html[dir="rtl"] body {
+  direction: rtl;
+  text-align: right;
+}
+
+html[dir="rtl"] .navbar {
+  text-align: right;
+}
+
+html[dir="rtl"] .navbar__items {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .navbar__toggle {
+  margin-left: 0.5rem;
+  margin-right: 0;
+}
+
+html[dir="rtl"] .menu__list-item {
+  text-align: right;
+}
+
+html[dir="rtl"] .pagination-nav__link {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .pagination-nav__sublabel {
+  transform: scaleX(-1);
+}
+
+/* Ensure proper RTL layout for content */
+html[dir="rtl"] .markdown {
+  direction: rtl;
+  text-align: right;
+}
+
+html[dir="rtl"] .table-of-contents__link {
+  text-align: right;
+}
+
+html[dir="rtl"] .table-of-contents__item {
+  text-align: right;
+}
+
+html[dir="rtl"] .theme-doc-sidebar-menu {
+  text-align: right;
+}
+
+html[dir="rtl"] .theme-edit-this-page {
+  flex-direction: row-reverse;
 }

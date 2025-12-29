@@ -1,0 +1,80 @@
+# API Contract: Locale Switching Service
+
+## Overview
+This document describes the API contract for the locale switching functionality between English and Urdu content.
+
+## Endpoints
+
+### GET /api/locale/available
+Returns available locales for the current user.
+
+**Request**:
+- Method: GET
+- Path: /api/locale/available
+- Headers: Authorization: Bearer {jwt_token}
+
+**Response**:
+- Status: 200 OK
+- Content-Type: application/json
+- Body:
+```json
+{
+  "locales": [
+    {
+      "code": "en",
+      "label": "English",
+      "direction": "ltr",
+      "available": true
+    },
+    {
+      "code": "ur",
+      "label": "اردو",
+      "direction": "rtl",
+      "available": true
+    }
+  ]
+}
+```
+
+### POST /api/locale/switch
+Initiates a locale switch for authenticated users.
+
+**Request**:
+- Method: POST
+- Path: /api/locale/switch
+- Headers:
+  - Authorization: Bearer {jwt_token}
+  - Content-Type: application/json
+- Body:
+```json
+{
+  "targetLocale": "ur",
+  "currentPath": "/docs/intro",
+  "redirectPath": "/ur/docs/intro"
+}
+```
+
+**Response**:
+- Status: 200 OK
+- Content-Type: application/json
+- Body:
+```json
+{
+  "success": true,
+  "redirectUrl": "/ur/docs/intro",
+  "message": "Locale switch initiated successfully"
+}
+```
+
+**Error Responses**:
+- 401 Unauthorized: User not authenticated
+- 403 Forbidden: User not authorized to access target locale
+- 404 Not Found: Target locale or path not available
+
+## Authentication
+All endpoints require a valid JWT token in the Authorization header. The token must be validated against the Better Auth system.
+
+## Validation Rules
+- Target locale must be in the available locales list
+- Current and redirect paths must be valid URLs
+- User must be authenticated to access locale switching functionality

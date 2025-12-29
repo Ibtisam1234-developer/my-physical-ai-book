@@ -78,16 +78,22 @@ async def chat_endpoint(
     except Exception as e:
         # Log error
         logger = logging.getLogger(__name__)
+        error_msg = str(e)
         log_response_info(
             logger=logger,
             endpoint="/api/chat",
             status=500,
             latency_ms=(time.time() - start_time) * 1000,
             user_id=current_user.get("id"),
-            error=str(e)
+            error=error_msg
         )
 
-        raise HTTPException(status_code=500, detail=f"Chat processing failed: {str(e)}")
+        # Print to console for Railway logs
+        print(f"ERROR in /api/chat: {error_msg}")
+        import traceback
+        traceback.print_exc()
+
+        raise HTTPException(status_code=500, detail=f"Chat processing failed: {error_msg}")
 
 
 @router.post("/stream")

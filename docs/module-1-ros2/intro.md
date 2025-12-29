@@ -65,3 +65,4 @@ After completing this module, students will be able to:
 ## Next Steps
 
 Continue to [Nodes, Topics, Services](./nodes-topics-services.md) to learn about the fundamental communication patterns in ROS 2.
+

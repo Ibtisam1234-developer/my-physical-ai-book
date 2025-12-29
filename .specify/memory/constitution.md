@@ -1,22 +1,19 @@
 <!--
 SYNC IMPACT REPORT
 ===================
-Version Change: Initial → 1.0.0
-Rationale: First ratification of Physical AI & Humanoid Robotics Platform constitution
+Version Change: 1.1.0 → 1.2.0
+Rationale: Added new principle VIII (Static Localization & Routing) establishing requirements for content consistency, auth-gated access, stateless navigation, and directionality for Urdu localization
 
-Modified Principles: N/A (initial creation)
+Modified Principles: N/A
 Added Sections:
-  - Core Principles (6 principles: Security, TDD, UX, Gemini Usage, Modularity, Human Approval)
-  - Technology Stack Requirements
-  - Agent Responsibilities
-  - Governance
+  - Principle VIII: Static Localization & Routing (content consistency, auth-gated access, stateless navigation, directionality)
 
 Removed Sections: N/A
 
 Templates Requiring Updates:
-  ✅ .specify/templates/plan-template.md - Constitution Check section aligns with principles
-  ✅ .specify/templates/spec-template.md - Requirements align with UX and testing principles
-  ✅ .specify/templates/tasks-template.md - Task categorization reflects TDD and modularity principles
+  ✅ .specify/templates/plan-template.md - Constitution Check section aligns with all principles including new Static Localization & Routing
+  ✅ .specify/templates/spec-template.md - Requirements align with UX, testing, personalization, and now localization principles
+  ✅ .specify/templates/tasks-template.md - Task categorization reflects TDD, modularity, personalization, and localization principles
 
 Follow-up TODOs: None
 -->
@@ -129,6 +126,97 @@ Critical stages (production deployment, production data ingestion) REQUIRE expli
 - Human reviews proposal and provides explicit approval/rejection
 - Agent logs approval with timestamp and justification
 - Automated actions proceed only after approval received
+
+### VII. Identity & Personalization
+
+User identity and personalization capabilities MUST use stateless authentication with mandatory profile fields and strict privacy controls.
+
+**Rationale**: Physical AI education requires personalized learning paths based on student background (software/hardware experience). Stateless JWT authentication enables cross-service communication between Node/Python backends while maintaining security. Profile data must be captured at signup to enable immediate personalization without additional friction.
+
+**Requirements**:
+
+**Stateless Authentication**:
+- Use RS256 JWT tokens for all cross-service communication
+- Node.js server (Better Auth or custom) signs tokens with private key
+- Python FastAPI backend verifies tokens using public key/JWKS endpoint
+- Token payload MUST include: user_id, email, software_background, hardware_background
+- Token expiration: 1 hour for access tokens, 30 days for refresh tokens
+- Implement token refresh mechanism without requiring re-authentication
+- No server-side session storage (enables horizontal scaling)
+
+**Schema Strictness**:
+- `software_background` and `hardware_background` fields are MANDATORY at signup
+- Fields stored in Neon PostgreSQL `users` table with NOT NULL constraints
+- Validation rules:
+  - `software_background`: enum (beginner, intermediate, advanced, expert)
+  - `hardware_background`: enum (none, hobbyist, student, professional)
+- Signup flow MUST NOT proceed without both fields completed
+- Fields immutable after initial creation (require explicit "edit profile" action to change)
+
+**Personalization Persistence**:
+- Personalized content (curriculum recommendations, difficulty adjustments) generated on-demand using LLM
+- Cache personalized content in Neon DB to avoid redundant LLM API costs
+- Cache structure: `personalized_content` table with columns:
+  - `user_id` (foreign key to users table)
+  - `content_type` (enum: curriculum_path, difficulty_level, recommended_resources)
+  - `content_payload` (JSONB)
+  - `generated_at` (timestamp)
+  - `expires_at` (timestamp, default 7 days)
+- Cache invalidation: on profile update or explicit user request
+- RAG queries personalized by injecting background into system prompt
+
+**Privacy & PII Handling**:
+- `software_background` and `hardware_background` classified as PII (Personally Identifiable Information)
+- MUST only use profile fields in LLM prompt context
+- NEVER log profile fields in application logs, error messages, or analytics
+- Anonymize user data in development/staging environments
+- Database backups encrypted at rest
+- Profile data access limited to: authentication service, personalization service, user profile management
+- Audit log all access to profile data with timestamp and service identifier
+- GDPR compliance: users can request profile data export and deletion
+
+**Cross-Service Communication**:
+- Node.js auth service exposes JWKS endpoint at `/.well-known/jwks.json`
+- Python backend fetches public keys from JWKS endpoint on startup
+- Public key cache refreshed every 24 hours or on verification failure
+- JWT verification failures result in HTTP 401 with clear error message
+- No fallback to weaker authentication methods
+
+### VIII. Static Localization & Routing
+
+Localization features MUST maintain content consistency, implement auth-gated access, preserve state during navigation, and support proper text directionality.
+
+**Rationale**: The Physical AI platform serves a global audience including Urdu-speaking learners. Proper localization ensures educational content is accessible to diverse communities while maintaining security and user experience standards. Content consistency prevents broken links and 404 errors that would degrade the learning experience.
+
+**Requirements**:
+
+**Content Consistency**:
+- For every file in `docs/`, a corresponding translated file MUST exist in `i18n/ur/docusaurus-plugin-content-docs/current/` to prevent 404 errors during routing
+- Automated build process MUST verify translation completeness before deployment
+- Missing translations MUST either show English fallback or redirect to main content page with clear language indication
+- Translation synchronization scripts MUST be implemented to identify and flag missing translations
+- Translation completeness metrics MUST be tracked and reported in CI/CD pipeline
+
+**Auth-Gated Access**:
+- The "Translate to Urdu" routing logic MUST verify the user's JWT session via Better-Auth before initiating the redirect
+- Unauthenticated users attempting to access localized content MUST be redirected to login page
+- JWT session verification MUST include token validity, expiration check, and proper audience validation
+- Session state MUST be preserved during language switch operations
+- Auth middleware MUST be properly configured for all localization routes
+
+**Stateless Navigation**:
+- Use the Docusaurus router for internal navigation to ensure the React state (and Auth session) is preserved across page transitions
+- Navigation between localized content MUST maintain user context and session data
+- Client-side routing MUST not break authentication state or require re-authentication
+- URL parameters and query strings MUST be properly handled during localization transitions
+- Back button functionality MUST work correctly between localized and non-localized content
+
+**Directionality**:
+- The Urdu docs MUST be served with `dir="rtl"` as configured in the Docusaurus i18n settings
+- RTL styling MUST be implemented for all UI components to ensure proper text alignment and layout
+- Bidirectional text handling MUST be tested and validated for mixed content
+- CSS rules MUST be properly configured to handle RTL layouts without breaking existing components
+- UI elements (buttons, navigation, forms) MUST be properly positioned for RTL languages
 
 ## Technology Stack Requirements
 
@@ -254,4 +342,4 @@ Critical stages (production deployment, production data ingestion) REQUIRE expli
 - Historical versions maintained in Git history
 - Breaking changes require migration plan and communication to all stakeholders
 
-**Version**: 1.0.0 | **Ratified**: 2025-12-25 | **Last Amended**: 2025-12-25
+**Version**: 1.2.0 | **Ratified**: 2025-12-25 | **Last Amended**: 2025-12-28

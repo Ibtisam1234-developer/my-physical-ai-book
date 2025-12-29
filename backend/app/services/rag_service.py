@@ -16,6 +16,8 @@ from app.config import get_qdrant_client
 from app.rag.embeddings import generate_embedding, generate_embeddings_batch
 from app.rag.prompts import build_rag_prompt, SYSTEM_PROMPT
 from app.rag.retrieval import search_similar_chunks
+import hashlib
+from datetime import datetime, timedelta
 
 
 @dataclass
@@ -135,6 +137,76 @@ class RAGService:
         )
 
         return result
+
+    async def generate_personalized_content(
+        self,
+        chapter_title: str,
+        software_background: str,
+        hardware_background: str,
+        user_id: str,
+        context_chunks: Optional[List[Dict[str, Any]]] = None,
+        temperature: float = 0.7,
+        max_tokens: int = 2000
+    ) -> str:
+        """
+        Generate personalized content based on user background.
+
+        Args:
+            chapter_title: Title of the chapter to personalize
+            software_background: User's software background level
+            hardware_background: User's hardware background level
+            user_id: User identifier
+            context_chunks: Optional context chunks to include
+            temperature: Generation temperature
+            max_tokens: Maximum tokens in response
+
+        Returns:
+            Generated personalized content
+        """
+        # Create personalization prompt based on user background
+        prompt = f"""
+        Create personalized educational content for the chapter: "{chapter_title}"
+
+        User Profile:
+        - Software Background: {software_background}
+        - Hardware Background: {hardware_background}
+
+        Please generate educational content that is tailored to the user's background level:
+        - For software background '{software_background}': adjust complexity and examples accordingly
+        - For hardware background '{hardware_background}': include relevant practical applications
+
+        Format the content in markdown with appropriate headings, explanations, and examples.
+        Focus on making the content accessible and relevant to their experience level.
+        """
+
+        # Include context chunks if provided
+        if context_chunks:
+            context_text = "\n\n".join([chunk.get('text', '') for chunk in context_chunks])
+            prompt += f"\n\nAdditional Context:\n{context_text}"
+
+        # Generate personalized content using the Google Generative AI model
+        import google.generativeai as genai
+        from app.config import get_gemini_client
+
+        # Prepare the content for the model
+        full_prompt = f"{SYSTEM_PROMPT}\n\n{prompt}"
+
+        # Generate content using the model (sync call wrapped in async)
+        import asyncio
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: self.gemini_model.generate_content(
+                full_prompt,
+                generation_config=genai.GenerationConfig(
+                    temperature=temperature,
+                    max_output_tokens=max_tokens,
+                )
+            )
+        )
+
+        answer = response.text if response and response.text else ""
+        return answer
 
     async def process_query_stream(
         self,

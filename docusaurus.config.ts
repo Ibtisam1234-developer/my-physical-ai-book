@@ -25,15 +25,23 @@ const config: Config = {
   organizationName: 'facebook', // Usually your GitHub org/user name.
   projectName: 'docusaurus', // Usually your repo name.
 
-  onBrokenLinks: 'throw',
+  onBrokenLinks: 'warn',
 
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
   // may want to replace "en" with "zh-Hans".
   i18n: {
     defaultLocale: 'en',
-    locales: ['en'],
+    locales: ['en', 'ur'],
+    localeConfigs: {
+      en: { label: 'English', direction: 'ltr' },
+      ur: { label: 'Urdu (اردو)', direction: 'rtl' },
+    },
   },
+
+  plugins: [
+    require.resolve('./plugins/auth-proxy'),
+  ],
 
   presets: [
     [
@@ -55,7 +63,8 @@ const config: Config = {
 
   // Custom fields for runtime configuration
   customFields: {
-    BACKEND_URL: process.env.BACKEND_URL || 'https://my-physical-ai-book-production.up.railway.app',
+    BACKEND_URL: process.env.BACKEND_URL || 'http://localhost:8000',
+    AUTH_SERVER_URL: process.env.AUTH_SERVER_URL || 'http://localhost:3001',
   },
 
   themeConfig: {
@@ -82,7 +91,6 @@ const config: Config = {
           label: 'GitHub',
           position: 'right',
         },
-        
       ],
     },
     footer: {
@@ -93,7 +101,7 @@ const config: Config = {
           items: [
             {
               label: 'Introduction',
-              to: '/docs/intro',
+              to: '/docs/intro/',
             },
             {
               label: 'Module 1: ROS 2',

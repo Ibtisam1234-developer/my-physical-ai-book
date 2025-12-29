@@ -4,6 +4,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import { authClient } from '@site/src/lib/auth-client';
 import { ChatMessage, StreamChunk } from '@site/src/types/chat';
 import { apiClient } from '@site/src/utils/api';
 import styles from './styles.module.css';
@@ -55,12 +56,20 @@ const VLAChatInterface: React.FC<VLAChatInterfaceProps> = ({ onClose, initialMes
       // Use backend URL from config
       const fullUrl = `${backendUrl}/api/chat/stream`;
 
+      // Get auth token if user is signed in
+      const session = authClient.getSession();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (session?.token) {
+        headers['Authorization'] = `Bearer ${session.token}`;
+      }
+
       // For streaming, we'll use Server-Sent Events
       const response = await fetch(fullUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           query: newInputValue,
           session_id: 'current_session', // In real app, this would be a proper session ID

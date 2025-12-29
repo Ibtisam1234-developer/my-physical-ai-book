@@ -2,6 +2,7 @@
 sidebar_position: 1
 ---
 
+
 # Introduction to Physical AI & Humanoid Robotics
 
 ## Welcome to the Future of Embodied Intelligence
@@ -135,6 +136,7 @@ The skills you'll learn apply directly to:
 ### Getting Started
 
 Ready to begin your journey into Physical AI and Humanoid Robotics? Continue to [Module 1: ROS 2 Fundamentals](/docs/module-1-ros2/intro) to start building your foundation in robot software development.
+
 
 ---
 

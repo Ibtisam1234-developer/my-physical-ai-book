@@ -1,0 +1,340 @@
+/* Auth Modal Styles */
+
+.auth-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.auth-modal {
+  background: var(--ifm-background-surface-color);
+  border-radius: 12px;
+  padding: 32px;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.auth-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: var(--ifm-color-emphasis-500);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.auth-close:hover {
+  background: var(--ifm-color-emphasis-100);
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--ifm-color-emphasis-100);
+  padding-bottom: 0;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ifm-color-emphasis-500);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+
+.auth-tab:hover {
+  color: var(--ifm-color-primary);
+}
+
+.auth-tab.active {
+  color: var(--ifm-color-primary);
+  border-bottom-color: var(--ifm-color-primary);
+}
+
+/* Form Styles */
+.auth-form h2 {
+  margin: 0 0 24px;
+  font-size: 24px;
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ifm-color-content);
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  font-size: 15px;
+  background: var(--ifm-background-color);
+  color: var(--ifm-color-content);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 0 0 3px var(--ifm-color-primary-lightest);
+}
+
+.password-input {
+  position: relative;
+}
+
+.password-input input {
+  padding-right: 60px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: var(--ifm-color-primary);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.auth-submit {
+  width: 100%;
+  padding: 14px;
+  background: var(--ifm-color-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s;
+}
+
+.auth-submit:hover:not(:disabled) {
+  background: var(--ifm-color-primary-dark);
+}
+
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-error {
+  background: var(--ifm-color-danger-lightest);
+  color: var(--ifm-color-danger);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+/* User Info Styles */
+.auth-user-info {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.auth-user-info h2 {
+  margin: 0 0 8px;
+}
+
+.auth-user-info p {
+  color: var(--ifm-color-emphasis-600);
+  margin: 0 0 16px;
+}
+
+.auth-badge {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.badge.software {
+  background: var(--ifm-color-info-lightest);
+  color: var(--ifm-color-info);
+}
+
+.badge.hardware {
+  background: var(--ifm-color-success-lightest);
+  color: var(--ifm-color-success);
+}
+
+.auth-logout {
+  width: 100%;
+  padding: 12px;
+  background: var(--ifm-color-emphasis-100);
+  color: var(--ifm-color-content);
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.auth-logout:hover {
+  background: var(--ifm-color-emphasis-200);
+}
+
+/* Personalize Button Styles */
+.personalize-button {
+  margin: 16px 0;
+}
+
+.personalize-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, var(--ifm-color-primary), var(--ifm-color-primary-dark));
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(var(--ifm-color-primary-rgb), 0.3);
+}
+
+.personalize-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(var(--ifm-color-primary-rgb), 0.4);
+}
+
+.personalize-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.personalize-icon {
+  font-size: 16px;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.personalize-error {
+  color: var(--ifm-color-danger);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.personalize-badge {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.personalized-content {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--ifm-color-success-lightest);
+  border-radius: 8px;
+  border: 1px solid var(--ifm-color-success-light);
+}
+
+.personalized-content h4 {
+  margin: 0 0 12px;
+  color: var(--ifm-color-success);
+  font-size: 14px;
+}
+
+.personalized-text {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Auth Header Button */
+.auth-header-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--ifm-color-emphasis-100);
+  color: var(--ifm-color-content);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.auth-header-button:hover {
+  background: var(--ifm-color-emphasis-200);
+}
+
+.auth-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ifm-color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+}

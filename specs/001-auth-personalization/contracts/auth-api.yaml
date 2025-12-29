@@ -1,0 +1,451 @@
+openapi: 3.0.3
+info:
+  title: Authentication Server API
+  description: |
+    Node.js authentication server providing RS256 JWT-based signup/signin with mandatory
+    software_background and hardware_background fields for personalized learning.
+
+    **Base URL**: `https://auth.yourdomain.com`
+
+    **Authentication**: JWT tokens returned from signin/signup endpoints. Use in Authorization header:
+    `Authorization: Bearer <access_token>`
+  version: 1.0.0
+  contact:
+    name: Physical AI Platform Team
+servers:
+  - url: https://auth.yourdomain.com
+    description: Production server (Railway)
+  - url: http://localhost:4000
+    description: Local development server
+
+tags:
+  - name: Authentication
+    description: User signup, signin, and token refresh operations
+  - name: JWKS
+    description: Public key distribution for JWT verification
+
+paths:
+  /api/auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: Create new user account
+      description: |
+        Register a new user with email, password, and mandatory background fields.
+        Returns JWT access token (1 hour) and refresh token (30 days) on success.
+
+        **Validation Rules**:
+        - Email: Must be valid RFC 5322 format
+        - Password: Minimum 8 characters
+        - software_background: Must be one of: beginner, intermediate, advanced, expert
+        - hardware_background: Must be one of: none, hobbyist, student, professional
+
+        **Corresponds to**: User Story 1 (FR-001, FR-002, FR-003, FR-005)
+      operationId: signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+            examples:
+              validSignup:
+                summary: Valid signup request
+                value:
+                  email: student@example.com
+                  password: SecurePass123!
+                  softwareBackground: intermediate
+                  hardwareBackground: hobbyist
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              example:
+                accessToken: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+                refreshToken: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+                expiresIn: 3600
+                user:
+                  id: 123e4567-e89b-12d3-a456-426614174000
+                  email: student@example.com
+                  softwareBackground: intermediate
+                  hardwareBackground: hobbyist
+        '400':
+          description: Validation error (missing/invalid fields)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingBackground:
+                  summary: Missing software_background
+                  value:
+                    error: Validation error
+                    message: Software background is required
+                    field: softwareBackground
+                invalidEnum:
+                  summary: Invalid enum value
+                  value:
+                    error: Validation error
+                    message: software_background must be one of beginner, intermediate, advanced, expert
+                    field: softwareBackground
+                weakPassword:
+                  summary: Weak password
+                  value:
+                    error: Validation error
+                    message: Password must be at least 8 characters
+                    field: password
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Conflict
+                message: Email already registered
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Internal server error
+                message: An unexpected error occurred
+
+  /api/auth/signin:
+    post:
+      tags:
+        - Authentication
+      summary: Sign in existing user
+      description: |
+        Authenticate user with email and password. Returns JWT access token (1 hour)
+        and refresh token (30 days) on success.
+
+        **Security**: Generic error messages prevent email enumeration attacks (FR-008).
+        Both "invalid email" and "invalid password" return "Invalid email or password".
+
+        **Corresponds to**: User Story 2 (FR-004, FR-005, FR-008)
+      operationId: signin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SigninRequest'
+            example:
+              email: student@example.com
+              password: SecurePass123!
+      responses:
+        '200':
+          description: Sign in successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              example:
+                accessToken: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+                refreshToken: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+                expiresIn: 3600
+                user:
+                  id: 123e4567-e89b-12d3-a456-426614174000
+                  email: student@example.com
+                  softwareBackground: intermediate
+                  hardwareBackground: hobbyist
+        '401':
+          description: Authentication failed (invalid email or password)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Unauthorized
+                message: Invalid email or password
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: |
+        Exchange refresh token for a new access token without requiring re-authentication.
+        Refresh token remains valid (30-day lifetime). New access token expires in 1 hour.
+
+        **Corresponds to**: FR-007, FR-015 (automatic token refresh for UX)
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+            example:
+              refreshToken: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+              example:
+                accessToken: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+                expiresIn: 3600
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Unauthorized
+                message: Invalid or expired refresh token
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /.well-known/jwks.json:
+    get:
+      tags:
+        - JWKS
+      summary: Get public keys for JWT verification
+      description: |
+        Returns RSA public keys in JWK format for verifying JWT signatures.
+        Python backend fetches this endpoint on startup and caches keys for 24 hours.
+
+        **Public Endpoint**: No authentication required. CORS enabled for all origins.
+
+        **Corresponds to**: User Story 4 (FR-006, FR-017)
+      operationId: getJWKS
+      responses:
+        '200':
+          description: JWKS successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JWKSResponse'
+              example:
+                keys:
+                  - kty: RSA
+                    use: sig
+                    kid: auth-server-key-2025
+                    alg: RS256
+                    n: xGOr-H7A-xfRW...
+                    e: AQAB
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    SignupRequest:
+      type: object
+      required:
+        - email
+        - password
+        - softwareBackground
+        - hardwareBackground
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address (unique)
+          example: student@example.com
+        password:
+          type: string
+          minLength: 8
+          format: password
+          description: User's password (hashed with bcrypt cost factor 12)
+          example: SecurePass123!
+        softwareBackground:
+          type: string
+          enum: [beginner, intermediate, advanced, expert]
+          description: User's software experience level
+          example: intermediate
+        hardwareBackground:
+          type: string
+          enum: [none, hobbyist, student, professional]
+          description: User's hardware experience level
+          example: hobbyist
+
+    SigninRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: student@example.com
+        password:
+          type: string
+          format: password
+          example: SecurePass123!
+
+    RefreshRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          description: JWT refresh token (30-day lifetime)
+          example: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+
+    AuthResponse:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+        - expiresIn
+        - user
+      properties:
+        accessToken:
+          type: string
+          description: JWT access token (RS256 signed, 1 hour expiration)
+          example: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          description: JWT refresh token (RS256 signed, 30 days expiration)
+          example: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+        expiresIn:
+          type: integer
+          description: Access token expiration in seconds (3600 = 1 hour)
+          example: 3600
+        user:
+          $ref: '#/components/schemas/UserProfile'
+
+    RefreshResponse:
+      type: object
+      required:
+        - accessToken
+        - expiresIn
+      properties:
+        accessToken:
+          type: string
+          description: New JWT access token (1 hour expiration)
+          example: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+        expiresIn:
+          type: integer
+          description: Access token expiration in seconds
+          example: 3600
+
+    UserProfile:
+      type: object
+      required:
+        - id
+        - email
+        - softwareBackground
+        - hardwareBackground
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User's unique identifier
+          example: 123e4567-e89b-12d3-a456-426614174000
+        email:
+          type: string
+          format: email
+          example: student@example.com
+        softwareBackground:
+          type: string
+          enum: [beginner, intermediate, advanced, expert]
+          example: intermediate
+        hardwareBackground:
+          type: string
+          enum: [none, hobbyist, student, professional]
+          example: hobbyist
+
+    JWKSResponse:
+      type: object
+      required:
+        - keys
+      properties:
+        keys:
+          type: array
+          description: Array of JWK public keys (typically 1 key, but supports key rotation)
+          items:
+            $ref: '#/components/schemas/JWK'
+
+    JWK:
+      type: object
+      description: JSON Web Key (RFC 7517)
+      required:
+        - kty
+        - use
+        - kid
+        - alg
+        - n
+        - e
+      properties:
+        kty:
+          type: string
+          enum: [RSA]
+          description: Key type
+          example: RSA
+        use:
+          type: string
+          enum: [sig]
+          description: Public key use (signature verification)
+          example: sig
+        kid:
+          type: string
+          description: Key ID (for key rotation support)
+          example: auth-server-key-2025
+        alg:
+          type: string
+          enum: [RS256]
+          description: Algorithm
+          example: RS256
+        n:
+          type: string
+          description: RSA modulus (base64url-encoded)
+          example: xGOr-H7A-xfRW...
+        e:
+          type: string
+          description: RSA exponent (base64url-encoded)
+          example: AQAB
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error category
+          example: Validation error
+        message:
+          type: string
+          description: Human-readable error message
+          example: Software background is required
+        field:
+          type: string
+          description: Field name causing validation error (if applicable)
+          example: softwareBackground
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token obtained from /api/auth/signin or /api/auth/signup
+
+security: []  # No global security; each endpoint specifies its own requirements
