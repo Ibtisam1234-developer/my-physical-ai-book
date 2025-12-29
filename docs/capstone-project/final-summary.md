@@ -1,6 +1,6 @@
 # Capstone Project: Complete Physical AI & Humanoid Robotics Platform
 
-## Project Completion Summary
+## Project Completion Summary.
 
 ### 🏗️ **System Architecture Implemented**
 
