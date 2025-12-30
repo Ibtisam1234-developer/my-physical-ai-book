@@ -28,7 +28,7 @@ app.use(cors({
 app.use(express.json());
 
 // Generate RSA key pair for RS256 (done once at startup)
-let keyPair: jose.KeyPair | null = null;
+let keyPair: jose.GenerateKeyPairResult | null = null;
 let publicKeyJWK: any = null;
 
 async function getKeyPair() {
