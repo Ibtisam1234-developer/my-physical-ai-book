@@ -84,9 +84,14 @@ def get_signing_key_from_jwt(token: str):
     Extract the signing key from JWKS based on the token's kid header.
     """
     try:
+        import base64
+
         # Decode header without verification to get kid
         header_data = token.split('.')[0]
-        header_json = base64url_decode(header_data + '=' * (4 - len(header_data) % 4))
+        # Add padding if needed
+        header_data += '=' * (4 - len(header_data) % 4)
+        # Use standard base64 urlsafe decode
+        header_json = base64.urlsafe_b64decode(header_data)
         header = json.loads(header_json.decode('utf-8'))
 
         kid = header.get('kid')
@@ -106,16 +111,8 @@ def get_signing_key_from_jwt(token: str):
         if not key:
             raise InvalidTokenError(f"Signing key with kid {kid} not found")
 
-        # Create the RSA public key using jose library and convert for jwt package
-        # The jose library creates the key object which we can use with jwt
-        jose_key = jwk.construct(key)
-        # For jwt package (1.4.0), we need to get the PEM format and then
-        # use it properly with the jwt.JWT class
-        public_key_pem = jose_key.to_pem()
-
         # Parse the key components from the JWKS key data
         # Properly handle base64url decoding
-        import base64
         # Add proper padding for base64 decoding
         n_b64 = key['n'] + '=' * (4 - len(key['n']) % 4)
         e_b64 = key['e'] + '=' * (4 - len(key['e']) % 4)
