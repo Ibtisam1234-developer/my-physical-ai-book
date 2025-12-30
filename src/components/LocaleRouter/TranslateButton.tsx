@@ -1,14 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useHistory } from '@docusaurus/router';
 
 export default function TranslateRouteButton() {
   const location = useLocation();
   const history = useHistory();
+  const [isSignedIn, setIsSignedIn] = useState(false);
 
   // Check if user is signed in using the same keys as auth context
-  const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-  const authUser = typeof window !== 'undefined' ? localStorage.getItem('auth_user') : null;
-  const isSignedIn = !!(authToken && authUser);
+  useEffect(() => {
+    const checkAuth = () => {
+      if (typeof window !== 'undefined') {
+        const authToken = localStorage.getItem('auth_token');
+        const authUser = localStorage.getItem('auth_user');
+        const signedIn = !!(authToken && authUser);
+        setIsSignedIn(signedIn);
+
+        // Debug logging
+        console.log('TranslateButton - Auth check:', {
+          hasToken: !!authToken,
+          hasUser: !!authUser,
+          isSignedIn: signedIn
+        });
+      }
+    };
+
+    // Initial check
+    checkAuth();
+
+    // Listen for storage events (when auth state changes in other tabs/components)
+    window.addEventListener('storage', checkAuth);
+
+    // Also check periodically in case localStorage was updated in same tab
+    const interval = setInterval(checkAuth, 1000);
+
+    return () => {
+      window.removeEventListener('storage', checkAuth);
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleRouting = () => {
     if (!isSignedIn) {
