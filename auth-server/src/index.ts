@@ -20,10 +20,30 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-// Middleware
+// Middleware - Configure CORS to allow requests from frontend and backend
 app.use(cors({
-  origin: [FRONTEND_URL, BACKEND_URL],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, postman)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      FRONTEND_URL,
+      BACKEND_URL,
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:8000',
+      'https://my-physical-ai-book.vercel.app'
+    ];
+
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all origins for now during development
+    }
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
 
