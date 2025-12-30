@@ -69,6 +69,7 @@ const ChatBot: React.FC = () => {
         body: JSON.stringify({
           query: inputValue,
           score_threshold: 0.7, // Use the default threshold
+          stream: false, // Disable streaming for simple chat
         }),
       });
 

@@ -5,8 +5,13 @@ import type { SignupParams, SigninParams, AuthResponse, User } from "./types";
 class AuthAPI {
   private baseUrl: string;
 
-  constructor(baseUrl: string = "http://localhost:3001") {
-    this.baseUrl = baseUrl;
+  constructor(baseUrl?: string) {
+    // Try to get from window (injected by Docusaurus), then environment, then default to deployed server
+    if (typeof window !== 'undefined' && (window as any).docusaurus?.siteConfig?.customFields?.AUTH_SERVER_URL) {
+      this.baseUrl = (window as any).docusaurus.siteConfig.customFields.AUTH_SERVER_URL;
+    } else {
+      this.baseUrl = baseUrl || "https://my-physical-ai-book-production-87e2.up.railway.app";
+    }
   }
 
   async signup(params: SignupParams): Promise<AuthResponse> {

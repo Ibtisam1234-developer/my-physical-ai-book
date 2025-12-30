@@ -22,9 +22,12 @@ class AuthClient {
   private initialized: boolean = false;
 
   constructor() {
-    // Get the auth server URL from environment or default
-    // In browser, we use the default since process.env is not available
-    this.baseUrl = 'http://localhost:3001';
+    // Get the auth server URL from Docusaurus config or default to deployed server
+    if (typeof window !== 'undefined' && (window as any).docusaurus?.siteConfig?.customFields?.AUTH_SERVER_URL) {
+      this.baseUrl = (window as any).docusaurus.siteConfig.customFields.AUTH_SERVER_URL;
+    } else {
+      this.baseUrl = 'https://my-physical-ai-book-production-87e2.up.railway.app';
+    }
 
     // Initialize session from localStorage if available
     this.initSession();
