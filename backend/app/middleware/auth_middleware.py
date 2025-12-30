@@ -60,18 +60,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
         token = extract_token_from_header(auth_header)
 
         if not token:
-            # For development, allow requests without authentication
-            # and attach a mock user for protected endpoints
+            # Require authentication for protected endpoints
             if self._is_protected_endpoint(request.url.path):
-                # Attach a mock user for development
-                request.state.user = {
-                    "sub": "dev_user_001",
-                    "email": "dev@example.com",
-                    "name": "Development User",
-                    "software_background": "beginner",
-                    "hardware_background": "none"
-                }
-                request.state.user_id = "dev_user_001"
+                return JSONResponse(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    content={"error": "Authentication required", "code": "no_token"}
+                )
             response = await call_next(request)
             return response
 
