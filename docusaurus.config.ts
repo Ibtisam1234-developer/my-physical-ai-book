@@ -63,7 +63,7 @@ const config: Config = {
 
   // Custom fields for runtime configuration
   customFields: {
-    BACKEND_URL: process.env.BACKEND_URL || 'http://localhost:8000',
+    BACKEND_URL: process.env.BACKEND_URL || 'https://my-physical-ai-book-production.up.railway.app',
     AUTH_SERVER_URL: process.env.AUTH_SERVER_URL || 'http://localhost:3001',
   },
 
